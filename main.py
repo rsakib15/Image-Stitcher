@@ -27,14 +27,7 @@ def get_correspondences(image):
     return a, b
 
 
-def compute_homography(a, b, a2, b2):
-
-    if len(a) < 4 or len(b) < 4 or len(a2) < 4 or len(b2) < 4:
-        raise Exception('At least 4 set of points is required to compute homography')
-
-    src_points = np.array([[a[0], b[0]], [a[1], b[1]], [a[2], b[2]], [a[3], b[3]]],dtype=np.float32)
-    dest_points = np.array([[a2[0], b2[0]], [a2[1], b2[1]], [a2[2], b2[2]], [a2[3], b2[3]]],dtype=np.float32)
-
+def compute_homography(src_points,dest_points):
     if src_points.shape != dest_points.shape:
         raise Exception('Source and Destination dimensions must be same')
 
@@ -123,24 +116,66 @@ def warp_and_blend(image1, image2, H):
                 warp_image[rv - s - 1, rh - 1] = image1[i, j]
                 warp_image[rv - s - 1, rh + 1] = image1[i, j]
 
-    cv2.imwrite('results/warp.png', warp_image)
-    cv2.imwrite('results/warp_and_blend.png', blend_image)
+    cv2.imwrite('results/another_wrap.png', warp_image)
+    cv2.imwrite('results/another_warp_and_blend.png', blend_image)
+
+
+def generate_billboard(billboard_image, new_billboard_image, content_image):
+    a, b = get_correspondences(billboard_image)
+    x, y, z = content_image.shape
+
+    c1 = np.array((0, 0, 1))
+    c2 = np.array((0, content_image.shape[0] - 1, 1))
+    c3 = np.array((content_image.shape[1] - 1, content_image.shape[0] - 1, 1))
+    c4 = np.array((content_image.shape[1] - 1, 0, 1))
+
+    src_points = np.array([[c1[0], c1[1]], [c2[0], c2[1]],[c3[0], c3[1]], [c4[0], c4[1]]])
+    dest_points = np.array([[a[0], b[0]], [a[1], b[1]], [a[2], b[2]], [a[3], b[3]]])
+
+    H = compute_homography(src_points, dest_points)
+
+    for i in range(x):
+        for j in range(y):
+            trans = np.mat(H) * np.transpose(np.mat([j, i, 1]))
+            rh = int(trans[0, 0] / trans[-1, 0])
+            rv = int(trans[1, 0] / trans[-1, 0])
+            new_billboard_image[rv, rh] = content_image[i, j, :]
+
+    cv2.imwrite('results/billboard_overwrite.png', new_billboard_image)
+
 
 
 
 if __name__ == '__main__':
-    image1 = cv2.imread('data/uttower1.JPG')
-    image2 = cv2.imread('data/uttower2.JPG')
+    # image1 = cv2.imread('data/2.jpg')
+    # image2 = cv2.imread('data/1.jpg')
+    #
+    # #getting correspondences
+    # x1, y1 = get_correspondences(image1)
+    # save_points(image1, x1, y1, 'S2.jpg')
+    # x2, y2 = get_correspondences(image2)
+    # save_points(image2, x1, y1, 'S3.jpg')
+    #
+    # # computing homography parameter
+    # if len(x1) < 4 or len(y1) < 4 or len(x2) < 4 or len(y2) < 4:
+    #     raise Exception('At least 4 set of points is required to compute homography')
+    #
+    # src_points = np.array([[x1[0], y1[0]], [x1[1], y1[1]], [x1[2], y1[2]], [x1[3], y1[3]]],dtype=np.float32)
+    # dest_points = np.array([[x2[0], y2[0]], [x2[1], y2[1]], [x2[2], y2[2]], [x2[3], y2[3]]],dtype=np.float32)
+    #
+    # H = compute_homography(src_points,dest_points)
+    # draw_correspondences(image1, image2, H, x1, y1)
+    #
+    # #Wraping between image planes
+    # warp_and_blend(image1,image2,H)
 
-    # getting correspondences
-    x1, y1 = get_correspondences(image1)
-    save_points(image1, x1, y1, 'uttower1_points.png')
-    x2, y2 = get_correspondences(image2)
-    save_points(image2, x1, y1, 'uttower2_points.png')
 
-    ## computing homography parameter
-    H = compute_homography(x1, y1, x2, y2)
-    draw_correspondences(image1, image2, H, x1, y1)
 
-    #Wraping between image planes
-    warp_and_blend(image1,image2,H)
+    #billboard_image_overwrite
+    print("Generating Billboard image....")
+    billboard_image = cv2.imread('data/billboard.jpg')
+    new_billboard_image = cv2.imread('data/billboard.jpg')
+    content_image = cv2.imread('data/ads.jpg')
+    generate_billboard(billboard_image,new_billboard_image,content_image)
+    print("Billboard overwrite completed")
+
