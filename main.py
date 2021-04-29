@@ -63,7 +63,7 @@ def draw_correspondences(image1, image2, H, a, b):
         cv2.line(merged_image, (a[i]+width, b[i]), (int(tp[0, 0] / tp[-1, 0]), int(tp[1, 0] / tp[-1, 0])), thickness=1, color=colors[i])
 
     cv2.imshow('Correspondences', merged_image)
-    cv2.imwrite('results/correspondences.png', merged_image)
+    cv2.imwrite('results/additional_correspondences.png', merged_image)
     cv2.waitKey(0)
 
 
@@ -98,15 +98,6 @@ def warp_and_blend(image1, image2, H):
             s = np.minimum(0, minX)
 
             if rv - s - 1 > 0 and rv - s + 1 < blend_image.shape[0] and rh + 1 < blend_image.shape[1]:
-                blend_image[rv - s, rh] = image1[i, j]
-                blend_image[rv - s + 1, rh] = image1[i, j]
-                blend_image[rv - s, rh + 1] = image1[i, j]
-                blend_image[rv - s, rh - 1] = image1[i, j]
-                blend_image[rv - s + 1, rh + 1] = image1[i, j]
-                blend_image[rv - s + 1, rh - 1] = image1[i, j]
-                blend_image[rv - s - 1, rh + 1] = image1[i, j]
-                blend_image[rv - s - 1, rh - 1] = image1[i, j]
-
                 warp_image[rv - s, rh] = image1[i, j]
                 warp_image[rv - s+1, rh] = image1[i, j]
                 warp_image[rv - s-1, rh] = image1[i, j]
@@ -116,8 +107,17 @@ def warp_and_blend(image1, image2, H):
                 warp_image[rv - s - 1, rh - 1] = image1[i, j]
                 warp_image[rv - s - 1, rh + 1] = image1[i, j]
 
-    cv2.imwrite('results/another_wrap.png', warp_image)
-    cv2.imwrite('results/another_warp_and_blend.png', blend_image)
+                blend_image[rv - s, rh] = image1[i, j]
+                blend_image[rv - s + 1, rh] = image1[i, j]
+                blend_image[rv - s, rh + 1] = image1[i, j]
+                blend_image[rv - s, rh - 1] = image1[i, j]
+                blend_image[rv - s + 1, rh + 1] = image1[i, j]
+                blend_image[rv - s + 1, rh - 1] = image1[i, j]
+                blend_image[rv - s - 1, rh + 1] = image1[i, j]
+                blend_image[rv - s - 1, rh - 1] = image1[i, j]
+
+    cv2.imwrite('results/wrap.png', warp_image)
+    cv2.imwrite('results/warp_and_blend.png', blend_image)
 
 
 def generate_billboard(billboard_image, new_billboard_image, content_image):
@@ -144,32 +144,29 @@ def generate_billboard(billboard_image, new_billboard_image, content_image):
     cv2.imwrite('results/billboard_overwrite.png', new_billboard_image)
 
 
-
-
 if __name__ == '__main__':
-    # image1 = cv2.imread('data/2.jpg')
-    # image2 = cv2.imread('data/1.jpg')
-    #
-    # #getting correspondences
-    # x1, y1 = get_correspondences(image1)
-    # save_points(image1, x1, y1, 'S2.jpg')
-    # x2, y2 = get_correspondences(image2)
-    # save_points(image2, x1, y1, 'S3.jpg')
-    #
-    # # computing homography parameter
-    # if len(x1) < 4 or len(y1) < 4 or len(x2) < 4 or len(y2) < 4:
-    #     raise Exception('At least 4 set of points is required to compute homography')
-    #
-    # src_points = np.array([[x1[0], y1[0]], [x1[1], y1[1]], [x1[2], y1[2]], [x1[3], y1[3]]],dtype=np.float32)
-    # dest_points = np.array([[x2[0], y2[0]], [x2[1], y2[1]], [x2[2], y2[2]], [x2[3], y2[3]]],dtype=np.float32)
-    #
-    # H = compute_homography(src_points,dest_points)
-    # draw_correspondences(image1, image2, H, x1, y1)
-    #
-    # #Wraping between image planes
-    # warp_and_blend(image1,image2,H)
+    image1 = cv2.imread('data/uttower1.JPG')
+    image2 = cv2.imread('data/uttower2.JPG')
 
+    #getting correspondences
+    x1, y1 = get_correspondences(image1)
+    save_points(image1, x1, y1, 'uttower1_points.jpg')
+    x2, y2 = get_correspondences(image2)
+    save_points(image2, x1, y1, 'uttower2_points.jpg')
 
+    # computing homography parameter
+    if len(x1) < 4 or len(y1) < 4 or len(x2) < 4 or len(y2) < 4:
+        raise Exception('At least 4 set of points is required to compute homography')
+
+    src_points = np.array([[x1[0], y1[0]], [x1[1], y1[1]], [x1[2], y1[2]], [x1[3], y1[3]]],dtype=np.float32)
+    dest_points = np.array([[x2[0], y2[0]], [x2[1], y2[1]], [x2[2], y2[2]], [x2[3], y2[3]]],dtype=np.float32)
+
+    H = compute_homography(src_points,dest_points)
+    print(H)
+    draw_correspondences(image1, image2, H, x1, y1)
+
+    #Wraping between image planes
+    warp_and_blend(image1,image2,H)
 
     #billboard_image_overwrite
     print("Generating Billboard image....")
@@ -178,4 +175,3 @@ if __name__ == '__main__':
     content_image = cv2.imread('data/ads.jpg')
     generate_billboard(billboard_image,new_billboard_image,content_image)
     print("Billboard overwrite completed")
-
